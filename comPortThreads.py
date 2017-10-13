@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
+
 # coding: utf-8
- 
 import serial
 import paho.mqtt.client as mqtt
 import time
@@ -44,13 +44,14 @@ def speedLeft_callback(client, userdata, message):
     time.sleep(0.1)
     speedLeft = int(message.payload)
     sendComand('DRV',((0,2),(speedLeft,4)))
-    print(speedLeft)
+
+    # print(speedLeft)
 
 def speedRight_callback(client, userdata, message):
     time.sleep(0.1)
     speedRight = int(message.payload)
     sendComand('DRV',((1,2),(speedRight,4)))
-    print(speedRight)
+    # print(speedRight)
     
 def workMode_callback(client, userdata, message):
     workMode = int(message.payload)
@@ -105,22 +106,28 @@ def parseCmd(tmpList):                                                #созд�
     #print(voltage)
     #print(amperage)
     #print(voltageLevel)
-    
+
+def toHex(val,nbytes):
+    tmp = hex((val + (1 << 8*int(nbytes/2))) % (1 << 8*int(nbytes/2)))
+    ret = tmp[2:]
+    while(len(ret) < nbytes):
+        ret = "0"+ret
+    return ret
+
+
 #создаем функцию для отпрвки команд (cmd-команда для отправки, params-значение для команды) 
 def sendComand(cmd, params):                                
     paramList=''
     global cmdCount                                                         #создаем 
     for param in params:                                                    #создаем цикл для формаирования paramList
-        formatStr = '%0.'+str(param[1])+'X'
-        print(formatStr)
-        paramList = paramList + str(formatStr % (param[0]))                  #формируем paramList
+        paramList = paramList + str(toHex(param[0],param[1])).upper()
     cmd = str( '<%0.2X %s %s>' % (cmdCount, cmd, paramList))                #формируем cmd
-    ser.write(cmd.encode())                                                 #отправляем сформированную команду 
+    ser.write(cmd.encode())                                                 #отправляем сформированную команду
     print(cmd)
     cmdCount = cmdCount+1                                               #увеличиваем счетчик для номерования команд
-    if cmdCount == 255:   
+    if cmdCount == 255:
         cmdCount = 0                                                    #обнуляем считчик в случае, если номер команды достик 255
-    
+
 subscriber = mqtt.Client()                                              #Подключаемся к издателю 
 subscriber.on_connect = on_connect
 subscriber.on_message = on_message

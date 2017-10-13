@@ -32,19 +32,18 @@ while running:
         if event.type == pygame.QUIT:
             running = False 
             break
-        
         if (event.type == pygame.JOYAXISMOTION):
             clock.tick(10)
             #print("Axis 0: " + str(joystick.get_axis(0)))
             #print("Axis 1: " + str(joystick.get_axis(1)))
             speedRight=int(joystick.get_axis(1)*255)
             speedLeft=int(joystick.get_axis(3)*255)
-            if speedLeft < 0:
-               speedLeft = speedLeft*(-1)
+            # if speedLeft < 0:
+            #    speedLeft = speedLeft*(-1)
             client.publish("robot/speedLeft", payload=speedLeft)
             
-            if speedRight < 0:
-               speedRight = speedRight*(-1)
+            # if speedRight < 0:
+            #    speedRight = speedRight*(-1)
             client.publish("robot/speedRight", payload=speedRight)
             print(speedRight, speedLeft)
            # print("speed")
