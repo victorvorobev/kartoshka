@@ -59,7 +59,6 @@ class SocketSender():
             self.sendSuccess = False
             if len(self.queue) != 0: #
                 self.SendMsg(self.queue[0]) #
-
                 if self.sendSuccess:
                     self.queue.pop(0)
             else:

@@ -37,7 +37,14 @@ class RoverJoy(threading.Thread):
         self.hatXold = 0
         self.hatYold = 0
 
-        self.sendMsg = struct.Struct('=2i')
+        self.sendMsg = struct.Struct('=2i 3?')
+        self.R2D2 = False
+        self.R2D2WasReleased = True
+        self.lamp = False
+        self.lampWasReleased = True
+
+        self.debug = False
+        self.debugWasReleased = True
 
         self.imageWidth = 640
         self.imageHeight = 480
@@ -73,8 +80,37 @@ class RoverJoy(threading.Thread):
                         self.autonom = True
                         print("autonom")
 
-            if (tempButtons.get('thumbl') == 0):
+            if(tempButtons.get('thumbl') == 0):
                 self.autonomWasReleased = True
+
+            if(tempButtons.get('thumbr')  == 1):
+                if(self.lampWasReleased):
+                    self.lampWasReleased = False
+                    if(self.lamp == True):
+                        self.lamp = False
+                        print("Lamp off")
+                    elif(self.lamp == False):
+                        self.lamp = True
+                        print("Lamp on")
+
+            if(tempButtons.get('thumbr') == 0):
+                self.lampWasReleased = True
+
+            if(tempButtons.get('mode') == 1):
+                if(self.R2D2WasReleased):
+                    self.R2D2WasReleased = False
+                    self.R2D2 = True
+            if(tempButtons.get('mode') == 0):
+                self.R2D2 = False
+                self.R2D2WasReleased = True
+
+            if(tempButtons.get('y') == 1):
+                if(self.debugWasReleased):
+                    self.debugWasReleased = False
+                    self.debug = True
+            if(tempButtons.get('y') == 0):
+                self.debug = False
+                self.debugWasReleased = True
 
             if((tempButtons.get('start') == 1)):
                 if(self.speedUpReleased):
@@ -149,8 +185,11 @@ class RoverJoy(threading.Thread):
             try:
                 tempForward = self.speedForward
                 tempRotate = self.speedRotate
+                tempLamp = self.lamp
+                tempR2D2 = self.R2D2
+                tempDebug = self.debug
                 self.convertSpeed()
-                if((tempForward != self.speedForward) or (tempRotate != self.speedRotate)):
+                if((tempForward != self.speedForward) or (tempRotate != self.speedRotate) or (tempLamp != self.lamp) or (tempR2D2 != self.R2D2) or (tempDebug != self.debug)):
                     if(self.autonom == False):
                         self.rightSpeed = self.speedForward + self.speedRotate
                         self.leftSpeed = self.speedForward - self.speedRotate
@@ -158,7 +197,7 @@ class RoverJoy(threading.Thread):
                         if(self.leftSpeed < -100): self.leftSpeed = -100
                         if(self.rightSpeed > 100): self.rightSpeed = 100
                         if(self.rightSpeed < -100): self.rightSpeed = -100
-                        msg = self.sendMsg.pack(self.leftSpeed, self.rightSpeed)
+                        msg = self.sendMsg.pack(self.leftSpeed, self.rightSpeed, self.lamp, self.R2D2,self.debug)
                         self.sender.Send(msg)
                 time.sleep(0.05)
             except KeyboardInterrupt:
