@@ -46,8 +46,8 @@ class RoverJoy(threading.Thread):
         self.debug = False
         self.debugWasReleased = True
 
-        self.imageWidth = 640
-        self.imageHeight = 480
+        self.imageWidth = 160
+        self.imageHeight = 120
         self.frameCol = 5
         self.frameRow = 3
         self.frameWidth = self.imageWidth / self.frameCol
@@ -57,7 +57,7 @@ class RoverJoy(threading.Thread):
         self.autonomWasReleased = True
         self.intensityList = []
 
-        self.maxSpeed = 100
+        self.maxSpeed = 255
         self.speedUpReleased = True
         self.speedDownReleased = True
         self.speedGotFromHat = False
@@ -167,20 +167,19 @@ class RoverJoy(threading.Thread):
             if(not self.speedGotFromHat):
                 self.speedRT = tempAxis.get('rz')
                 self.speedRT += 1
-                self.speedRT *= 50
+                self.speedRT *= 127
                 self.speedLT = tempAxis.get('z')
                 self.speedLT += 1
-                self.speedLT *= 50
+                self.speedLT *= 127
                 self.speedForward = self.speedRT - self.speedLT
                 self.speedRotate = tempAxis.get('x')
-                self.speedRotate *= -100
-            if((self.speedRotate < 20) and (self.speedRotate > -20)):
+                self.speedRotate *= -255
+            if((self.speedRotate < 60) and (self.speedRotate > -60)):
                 self.speedRotate = 0
 
     def run(self):
         self.Line.start()
         self.VideoStart()
-        # self.AutonomMovementStart()
         while(not self.exit):
             try:
                 tempForward = self.speedForward
@@ -193,10 +192,10 @@ class RoverJoy(threading.Thread):
                     if(self.autonom == False):
                         self.rightSpeed = self.speedForward + self.speedRotate
                         self.leftSpeed = self.speedForward - self.speedRotate
-                        if(self.leftSpeed > 100): self.leftSpeed = 100
-                        if(self.leftSpeed < -100): self.leftSpeed = -100
-                        if(self.rightSpeed > 100): self.rightSpeed = 100
-                        if(self.rightSpeed < -100): self.rightSpeed = -100
+                        if(self.leftSpeed > 255): self.leftSpeed = 255
+                        if(self.leftSpeed < -255): self.leftSpeed = -255
+                        if(self.rightSpeed > 100): self.rightSpeed = 255
+                        if(self.rightSpeed < -255): self.rightSpeed = -255
                         msg = self.sendMsg.pack(self.leftSpeed, self.rightSpeed, self.lamp, self.R2D2,self.debug)
                         self.sender.Send(msg)
                 time.sleep(0.05)
@@ -214,10 +213,11 @@ class RoverJoy(threading.Thread):
                     self.colIntensity = []
                     for frameColCount in range(self.frameCol):
                         frame = gray[self.frameHeight*frameRowCount:self.frameHeight*(frameRowCount+1),self.frameWidth*frameColCount:self.frameWidth*(frameColCount+1)]
-                        intensity = int(frame.mean())
+                        if(frame.all):
+                                intensity = int(frame.mean())
                         self.colIntensity.append(intensity)
-                        cv2.putText(frame, str(intensity), (0, 30), font, 1, (255, 255, 255), 1)
-                        cv2.rectangle(frame, (0, 0), (self.frameWidth - 1, self.frameHeight - 1), (255, 255, 255), 1)
+                        # cv2.putText(frame, str(intensity), (0, 30), font, 1, (255, 255, 255), 1)
+                        # cv2.rectangle(frame, (0, 0), (self.frameWidth - 1, self.frameHeight - 1), (255, 255, 255), 1)
                     self.intensityList.append(self.colIntensity)
                 cv2.waitKey(1)
                 cv2.imshow("Line", gray)
@@ -226,8 +226,8 @@ class RoverJoy(threading.Thread):
                     self.speedForward = 20
 
                     if (len(self.intensityList) != 0):
-                        leftSensor = int(self.intensityList[2][1])  # 255 - white
-                        rightSensor = int(self.intensityList[2][3])  # 0 - black
+                        leftSensor = int(self.intensityList[0][0])  # 255 - white
+                        rightSensor = int(self.intensityList[0][5])  # 0 - black
                     difference = leftSensor - rightSensor
                     if(abs(difference) > 50):
                         if(self.lineColor == 'black'):
@@ -241,14 +241,12 @@ class RoverJoy(threading.Thread):
                         elif(leftSensor < 100): self.lineColor = 'white'
                         self.leftSpeed = self.speedForward
                         self.rightSpeed = self.speedForward
-                    self.downPush = False
-                    self.upPush = False
                     if (self.leftSpeed > 100): self.leftSpeed = 100
                     if (self.leftSpeed < -100): self.leftSpeed = -100
                     if (self.rightSpeed > 100): self.rightSpeed = 100
                     if (self.rightSpeed < -100): self.rightSpeed = -100
                     print("l", self.leftSpeed, "rs", self.rightSpeed)
-                    msg = self.sendMsg.pack(self.leftSpeed, self.rightSpeed, self.upPush, self.downPush)
+                    msg = self.sendMsg.pack(self.leftSpeed, self.rightSpeed, self.lamp, self.R2D2, self.debug)
                     self.sender.Send(msg)
                     # if (abs(difference) > 100):
                     #     self.leftSpeed = self.speedForward * np.sign(difference)

@@ -59,9 +59,11 @@ class myReceiver:
         global cmdCount
         if(msg):
             self.serialSocket.SendCommand('PRM', ((0, 2), (1, 2)))
+            # self.serialSocket.SendCommand('PRM', ((10,2),(0,4)))
+            # self.serialSocket.SendCommand('PRM', ((8, 2), (0, 4)))
 
     def SetMotors(self,leftSpeed,rightSpeed):
-        # print('l:',leftSpeed,'r:',rightSpeed)
+        print('l:',leftSpeed,'r:',rightSpeed)
         if(rightSpeed != self.speedRightOld):
             self.speedRightOld = rightSpeed
             self.serialSocket.SendCommand('DRV', ((motorRight, 2), (rightSpeed, 4)))
@@ -77,16 +79,11 @@ class myReceiver:
         global cmdCount
         if(r2d2):
             cmd = str('<%0.2X %s>' % (cmdCount, 'R2D2'))  # формируем cmd
-            print('r2d2',self.serialSocket.serialPort.write(cmd.encode()))
-            print(cmd)
+            self.serialSocket.serialPort.write(cmd.encode())
             cmdCount += 1
             if cmdCount == 255:
                 cmdCount = 0
             # self.serialPort.SendCommand('RD2D',())
-
-        # self.motors.SetSpeed(motorRight, -rightSpeed)
-        # self.motors.SetSpeed(motorLeft, leftSpeed)
-
 
     def StartRecv(self):
         print ("Starting recieve data from socket...")
@@ -152,7 +149,9 @@ class MySerial(threading.Thread):
             self.SendCommand('AOL',((param,2),))
         elif tmpList[0] == 'BAT':
             print('bat')
-            batary = tmpList[1]
+            # batary = tmpList[1]
+            # print('amp:',int(batary[:4],16),'vol:',self.ADC10ToInputVoltage(int(batary[4:8],16)),'wrn:',batary[8:])
+
 
     def toHex(self,val,nbytes):
         tmp = hex((val + (1 << 8 * int(nbytes / 2))) % (1 << 8 * int(nbytes / 2)))
@@ -173,6 +172,12 @@ class MySerial(threading.Thread):
         cmdCount = cmdCount + 1  # увеличиваем счетчик для номерования команд
         if cmdCount == 255:
             cmdCount = 0
+
+    def ADC10ToVoltage(self,val):
+        return 5.0/1024.0*val + 1.0/2048.0
+
+    def ADC10ToInputVoltage(self,val,resistorDevider=0.5,voltageDrop=0.5):
+        return self.ADC10ToVoltage(val)/resistorDevider + voltageDrop
 
     def Exit(self):
         self.serialOnline = False
