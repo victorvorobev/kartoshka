@@ -6,6 +6,7 @@ import sys
 import signal
 import threading
 import serial
+import time
 
 motorRight = 1
 motorLeft = 0
@@ -116,8 +117,7 @@ class MySerial(threading.Thread):
                                         baudrate=57600,
                                         parity=serial.PARITY_NONE,
                                         stopbits=serial.STOPBITS_ONE,
-                                        bytesize=serial.EIGHTBITS,
-                                        write_timeout=0)
+                                        bytesize=serial.EIGHTBITS)
         self.serialOnline = False
 
     def run(self):
@@ -144,14 +144,9 @@ class MySerial(threading.Thread):
                 tmpCmd += ch
 
     def ParseCmd(self, tmpList):
-        param = int(tmpList[1],16)
         if tmpList[0] == 'OL':
+            param = int(tmpList[1],16)
             self.SendCommand('AOL',((param,2),))
-        elif tmpList[0] == 'BAT':
-            print('bat')
-            # batary = tmpList[1]
-            # print('amp:',int(batary[:4],16),'vol:',self.ADC10ToInputVoltage(int(batary[4:8],16)),'wrn:',batary[8:])
-
 
     def toHex(self,val,nbytes):
         tmp = hex((val + (1 << 8 * int(nbytes / 2))) % (1 << 8 * int(nbytes / 2)))

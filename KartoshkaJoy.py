@@ -227,15 +227,15 @@ class RoverJoy(threading.Thread):
 
                     if (len(self.intensityList) != 0):
                         leftSensor = int(self.intensityList[0][0])  # 255 - white
-                        rightSensor = int(self.intensityList[0][5])  # 0 - black
+                        rightSensor = int(self.intensityList[0][4])  # 0 - black
                     difference = leftSensor - rightSensor
                     if(abs(difference) > 50):
                         if(self.lineColor == 'black'):
-                            self.rightSpeed = -self.speedForward*np.sign(difference)
-                            self.leftSpeed = self.speedForward*np.sign(difference)
+                            self.rightSpeed = -self.speedForward*np.sign(difference)*2
+                            self.leftSpeed = self.speedForward*np.sign(difference)*2
                         elif(self.lineColor == 'white'):
-                            self.rightSpeed = self.speedForward * np.sign(difference)
-                            self.leftSpeed = -self.speedForward * np.sign(difference)
+                            self.rightSpeed = self.speedForward * np.sign(difference)*2
+                            self.leftSpeed = -self.speedForward * np.sign(difference)*2
                     else:
                         if(leftSensor > 150): self.lineColor = 'black'
                         elif(leftSensor < 100): self.lineColor = 'white'

@@ -11,7 +11,7 @@ import time
 # import GstCV
 # import cv2
 import threading
-ip = '192.168.42.30'
+ip = '192.168.42.234'
 port = 2001
 LineRtpRecvPort = 5000
 LineRtcpRecvPort = 5001
