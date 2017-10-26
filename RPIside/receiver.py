@@ -92,6 +92,8 @@ class myReceiver:
         t = threading.Thread(target=self.RecieveSocket())
         t.start()
         self.serialSocket.SendCommand('PRM', ((0, 2), (1, 2)))
+        self.serialSocket.SendCommand('DRV', ((motorRight, 2), (0, 4)))
+        self.serialSocket.SendCommand('DRV', ((motorLeft, 2), (0, 4)))
 
     def StopRecv(self):
         print("Closing ports...")

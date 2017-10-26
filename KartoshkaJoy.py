@@ -203,59 +203,71 @@ class RoverJoy(threading.Thread):
                 self.Exit()
 
     def LineVideoShow(self):
-        font = cv2.FONT_HERSHEY_SIMPLEX
+        # font = cv2.FONT_HERSHEY_SIMPLEX
         while not self.exit:
             if self.Line.cvImage is not None:
-                cv2.cvtColor(self.Line.cvImage, cv2.COLOR_BGR2RGB)
-                gray = cv2.cvtColor(self.Line.cvImage, cv2.COLOR_BGR2GRAY)
-                self.intensityList = []
-                for frameRowCount in range(self.frameRow):
-                    self.colIntensity = []
-                    for frameColCount in range(self.frameCol):
-                        frame = gray[self.frameHeight*frameRowCount:self.frameHeight*(frameRowCount+1),self.frameWidth*frameColCount:self.frameWidth*(frameColCount+1)]
-                        if(frame.all):
-                                intensity = int(frame.mean())
-                        self.colIntensity.append(intensity)
-                        # cv2.putText(frame, str(intensity), (0, 30), font, 1, (255, 255, 255), 1)
-                        # cv2.rectangle(frame, (0, 0), (self.frameWidth - 1, self.frameHeight - 1), (255, 255, 255), 1)
-                    self.intensityList.append(self.colIntensity)
+                # Crop the image
+                showFrame = self.Line.cvImage[10:self.imageHeight/2-5, 0:self.imageWidth]
+                # Convert to gray
+                gray = cv2.cvtColor(showFrame, cv2.COLOR_BGR2GRAY)
+                # Gaussian blur
+                if self.autonom:
+                    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+                    # Color thresholding
+                    ret, thresh = cv2.threshold(blur, 60, 255, cv2.THRESH_BINARY_INV)
+                    # Find the contours of the frame
+                    cont_img, contours, hierarchy = cv2.findContours(thresh.copy(), 1, cv2.CHAIN_APPROX_NONE)
+                    # Find the biggest contour (if detected)
+                    if len(contours) > 0:
+                        c = max(contours, key=cv2.contourArea)
+                        M = cv2.moments(c)
+                        if(M['m00'] != 0):
+                            cx = int(M['m10'] / M['m00'])
+                            cy = int(M['m01'] / M['m00'])
+
+                        cv2.line(gray, (cx, 0), (cx, 720), (255, 0, 0), 1)
+                        cv2.line(gray, (0, cy), (1280, cy), (255, 0, 0), 1)
+
+                        cv2.drawContours(gray, contours, -1, (0, 255, 0), 1)
+                        if(cx > 110 or cx < 60):
+                            self.speedForward = 0
+                            self.speedRotate = -(cx-self.imageWidth/2)+10
+                        else:
+                            self.speedForward = 40
+                            cx = cx - self.imageWidth/2
+                            self.speedRotate = -cx/2
+                        self.rightSpeed = self.speedForward + self.speedRotate
+                        self.leftSpeed = self.speedForward - self.speedRotate
+                        if (self.leftSpeed > 100): self.leftSpeed = 100
+                        if (self.leftSpeed < -100): self.leftSpeed = -100
+                        if (self.rightSpeed > 100): self.rightSpeed = 100
+                        if (self.rightSpeed < -100): self.rightSpeed = -100
+                        self.lamp = False
+                        self.R2D2 = False
+                        self.debug = False
+                        msg = self.sendMsg.pack(self.leftSpeed, self.rightSpeed, self.lamp, self.R2D2, self.debug)
+                        self.sender.Send(msg)
+                        print("cx:",cx,"l:",self.leftSpeed,"r:",self.rightSpeed)
+                    # else:
+                    #     self.lamp = False
+                    #     self.R2D2 = False
+                    #     self.debug = False
+                    #     self.leftSpeed = 0
+                    #     self.rightSpeed = 0
+                    #     msg = self.sendMsg.pack(self.leftSpeed, self.rightSpeed, self.lamp, self.R2D2, self.debug)
+                    #     self.sender.Send(msg)
                 cv2.waitKey(1)
                 cv2.imshow("Line", gray)
 
-                if self.autonom:
-                    self.speedForward = 20
-
-                    if (len(self.intensityList) != 0):
-                        leftSensor = int(self.intensityList[0][0])  # 255 - white
-                        rightSensor = int(self.intensityList[0][4])  # 0 - black
-                    difference = leftSensor - rightSensor
-                    if(abs(difference) > 50):
-                        if(self.lineColor == 'black'):
-                            self.rightSpeed = -self.speedForward*np.sign(difference)*2
-                            self.leftSpeed = self.speedForward*np.sign(difference)*2
-                        elif(self.lineColor == 'white'):
-                            self.rightSpeed = self.speedForward * np.sign(difference)*2
-                            self.leftSpeed = -self.speedForward * np.sign(difference)*2
-                    else:
-                        if(leftSensor > 150): self.lineColor = 'black'
-                        elif(leftSensor < 100): self.lineColor = 'white'
-                        self.leftSpeed = self.speedForward
-                        self.rightSpeed = self.speedForward
-                    if (self.leftSpeed > 100): self.leftSpeed = 100
-                    if (self.leftSpeed < -100): self.leftSpeed = -100
-                    if (self.rightSpeed > 100): self.rightSpeed = 100
-                    if (self.rightSpeed < -100): self.rightSpeed = -100
-                    print("l", self.leftSpeed, "rs", self.rightSpeed)
-                    msg = self.sendMsg.pack(self.leftSpeed, self.rightSpeed, self.lamp, self.R2D2, self.debug)
-                    self.sender.Send(msg)
-                    # if (abs(difference) > 100):
-                    #     self.leftSpeed = self.speedForward * np.sign(difference)
-                    #     self.rightSpeed = -self.speedForward * np.sign(difference)
-                    #     print("rotate")
-                    # else:
-                    #     self.leftSpeed = self.speedForward
-                    #     self.rightSpeed = self.speedForward
-                    #     print("forward")
+                # if self.autonom:
+                #     self.speedForward = 20
+                #     if (self.leftSpeed > 100): self.leftSpeed = 100
+                #     if (self.leftSpeed < -100): self.leftSpeed = -100
+                #     if (self.rightSpeed > 100): self.rightSpeed = 100
+                #     if (self.rightSpeed < -100): self.rightSpeed = -100
+                #     print("l", self.leftSpeed, "rs", self.rightSpeed)
+                #     msg = self.sendMsg.pack(self.leftSpeed, self.rightSpeed, self.lamp, self.R2D2, self.debug)
+                #     self.sender.Send(msg)
             time.sleep(0.1)
 
     def VideoStart(self):
